@@ -35,7 +35,10 @@ import {
   AmbientLight,
   MeshPhongMaterial,
   VertexColors,
-  MeshBasicMaterial
+  MeshBasicMaterial,
+  Vector2,
+  HemisphereLight,
+  PointLight
 } from 'three';
 import { AnalyzerService } from '../../analyzer.service';
 
@@ -54,16 +57,27 @@ export class SceneComponent implements AfterViewInit {
   private FOV = 60;
 
   public nearClippingPane = 1;
-  public farClippingPane = 2000;
+  public farClippingPane = 5000;
 
   public planeGeom = new Geometry();
-  public cellSize = 50;
+  public cellSize = 1;
   public planeMesh: Mesh;
   public pivot: Group;
-  public gridSize = 8;
+  public gridSize = 170;
+
+  public gridVertices = new Array<Array<Vector3>>();
 
   constructor(private analyzer: AnalyzerService) {
     this.render = this.render.bind(this);
+    for (let x = 0; x <= this.gridSize; x++) {
+      const tempArr = [];
+      for (let y = 0; y <= this.gridSize; y++) {
+        tempArr.push(new Vector3(0, 0, 0));
+      }
+      this.gridVertices.push(tempArr);
+    }
+
+    console.table(this.gridVertices);
   }
 
   private setupPlane(initial?) {
@@ -78,11 +92,14 @@ export class SceneComponent implements AfterViewInit {
       for (let y = 0; y <= this.gridSize; y++) {
         const cellOffset = new Vector3(x * cellSize, 0, y * cellSize);
 
-        this.planeGeom.vertices[vertexIndex] = new Vector3(
+        const vertex = new Vector3(
           x * cellSize - vretexOffset,
           0,
           y * cellSize - vretexOffset
         );
+
+        this.gridVertices[x][y] = vertex;
+        this.planeGeom.vertices[vertexIndex] = vertex;
         vertexIndex++;
       }
     }
@@ -125,8 +142,10 @@ export class SceneComponent implements AfterViewInit {
 
     const object = new Mesh(
       this.planeGeom,
-      new MeshBasicMaterial({ vertexColors: VertexColors, wireframe: true })
+      new MeshPhongMaterial({ vertexColors: VertexColors, flatShading: true })
     );
+    object.castShadow = true;
+    object.receiveShadow = true;
     this.planeMesh = object;
     this.pivot = new Group();
     this.scene.add(this.pivot);
@@ -140,30 +159,57 @@ export class SceneComponent implements AfterViewInit {
     let vertexIndex = 0;
     const colors: Array<Color> = [];
 
-    for (let x = 0; x < this.planeGeom.vertices.length; x++) {
-      const value = data[vertexIndex];
+    const gridMiddleIndex = Math.floor(this.gridSize / 2);
 
-      colors.push(new Color(data[vertexIndex], 0, 0));
-      this.planeGeom.vertices[vertexIndex].y = value ? value : 0;
+    const centerVertex = this.gridVertices[Math.floor(this.gridSize / 2)][
+      Math.floor(this.gridSize / 2)
+    ];
 
+    centerVertex.y = data[vertexIndex] / 5;
+    let outerCircleIndex = this.gridSize / 2;
+    vertexIndex = outerCircleIndex;
+    while (outerCircleIndex > 0) {
+      for (
+        let x = gridMiddleIndex - outerCircleIndex;
+        x <= gridMiddleIndex + outerCircleIndex;
+        x++
+      ) {
+        for (
+          let y = gridMiddleIndex - outerCircleIndex;
+          y <= gridMiddleIndex + outerCircleIndex;
+          y++
+        ) {
+          if (this.gridVertices[x][y] === centerVertex) {
+            continue;
+          }
+          this.gridVertices[x][y].y = data[outerCircleIndex] / 5;
+        }
+      }
+      outerCircleIndex--;
       vertexIndex++;
     }
 
-    vertexIndex = 0;
+    // for (let x = 0; x < this.planeGeom.vertices.length; x++) {
+    //   const value = data[vertexIndex];
 
-    for (const face of this.planeGeom.faces) {
-      face.vertexColors[0].r = data[vertexIndex] / 128;
-      face.vertexColors[1].r = data[vertexIndex] / 128;
-      face.vertexColors[2].r = data[vertexIndex] / 128;
-      vertexIndex ++;
-    }
+    //   colors.push(new Color(data[vertexIndex], 0, 0));
+    //   this.planeGeom.vertices[vertexIndex].y = value ? value : 0;
 
-    this.planeGeom.colors = colors;
-    this.pivot.rotation.y += 0.01;
+    //   vertexIndex++;
+    // }
 
-    this.planeGeom.computeFaceNormals();
+    // vertexIndex = 0;
+
+    // for (const face of this.planeGeom.faces) {
+    //   face.vertexColors[0].r = data[vertexIndex] / 128;
+    //   face.vertexColors[1].r = data[vertexIndex] / 128;
+    //   face.vertexColors[2].r = data[vertexIndex] / 128;
+    //   vertexIndex++;
+    // }
+
+    // this.planeGeom.colors = colors;
+
     this.planeGeom.verticesNeedUpdate = true;
-    this.planeGeom.colorsNeedUpdate = true;
     this.planeGeom.normalsNeedUpdate = true;
   }
 
@@ -172,7 +218,9 @@ export class SceneComponent implements AfterViewInit {
   }
 
   private addLights() {
-    const light = new AmbientLight(0x404040);
+    const light = new PointLight(0xffffff);
+    light.position.copy(this.pivot.position).y = 200;
+
     this.scene.add(light);
   }
 
@@ -212,13 +260,16 @@ export class SceneComponent implements AfterViewInit {
 
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
-    this.renderer.setClearColor(0xffffff, 1);
+    this.renderer.setClearColor(0x000000, 1);
     this.renderer.autoClear = true;
 
     const component: SceneComponent = this;
 
     (function render() {
       requestAnimationFrame(render);
+      if (component.planeMesh) {
+        component.camera.lookAt(component.pivot.position);
+      }
       component.updatePlane();
       component.render();
     })();
@@ -247,8 +298,8 @@ export class SceneComponent implements AfterViewInit {
       this.farClippingPane
     );
     this.camera.position.x = 10;
-    this.camera.position.x = 10;
-    this.camera.position.x = 100;
+    this.camera.position.y = 100;
+    this.camera.position.z = 300;
   }
 
   private createScene() {
@@ -260,8 +311,8 @@ export class SceneComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.createScene();
     this.createCamera();
-    this.addLights();
     this.setupPlane(true);
+    this.addLights();
     this.startRendering();
     this.addControls();
   }

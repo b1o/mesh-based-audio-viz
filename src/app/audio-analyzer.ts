@@ -33,7 +33,7 @@ export class AudioAnalyzer {
   }
 
   public analyze() {
-    this.analyzer.getByteFrequencyData(this.dataArray);
+    this.analyzer.getByteTimeDomainData(this.dataArray);
     return this.dataArray;
   }
 
