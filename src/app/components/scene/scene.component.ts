@@ -43,7 +43,9 @@ import {
   Loader,
   FontLoader,
   Font,
-  TextGeometry
+  TextGeometry,
+  Blending,
+  NormalBlending
 } from 'three';
 import { AnalyzerService } from '../../analyzer.service';
 import { TextCreator } from '../../text-creator';
@@ -70,7 +72,7 @@ export class SceneComponent implements AfterViewInit {
   public planeMesh: Mesh;
   public pivot: Group;
   public loader: FontLoader;
-  public gridSize = 50;
+  public gridSize = 200;
 
   public gridVertices = new Array<Array<Vector3>>();
   public font: Font;
@@ -94,7 +96,7 @@ export class SceneComponent implements AfterViewInit {
     const triangleIndex = 0;
     console.log(initial);
     let vertexIndex = 0;
-    const vretexOffset = cellSize * 0.5;
+    const vretexOffset = cellSize * 1.2;
 
     for (let x = 0; x <= this.gridSize; x++) {
       for (let y = 0; y <= this.gridSize; y++) {
@@ -175,7 +177,7 @@ export class SceneComponent implements AfterViewInit {
 
     const object = new Mesh(
       this.planeGeom,
-      new MeshPhongMaterial({ vertexColors: VertexColors, flatShading: true, wireframe: true })
+      new MeshPhongMaterial({ vertexColors: VertexColors, wireframe: true })
     );
     object.castShadow = true;
     object.receiveShadow = true;
@@ -243,9 +245,10 @@ export class SceneComponent implements AfterViewInit {
 
   private test() {
     const data = this.analyzer.getAnalyzerData();
+    let colorIndex = this.gridSize / 2;
 
     for (
-      let circleOffset = 0;
+      let circleOffset = 5;
       circleOffset <= this.gridSize / 2;
       circleOffset++
     ) {
@@ -262,10 +265,18 @@ export class SceneComponent implements AfterViewInit {
       const all = column1.concat(column2, row1, row2);
 
       for (const vertex of all) {
-        this.planeGeom.vertices[this.planeGeom.vertices.indexOf(vertex)].y = data[circleOffset];
-
+        vertex.y = this.convertRange(data[colorIndex], [0, 105], [0,20]);
+        for(const color of vertex['color']) {
+          color.r = this.convertRange(data[colorIndex], [10, 105], [0, 255])
+          color.g = this.convertRange(data[colorIndex], [10, 105], [255, 0])
+        }
       }
+      colorIndex--;
     }
+
+    this.pivot.rotation.y += 0.01;
+    this.planeGeom.verticesNeedUpdate = true;
+    this.planeGeom.colorsNeedUpdate = true;
   }
 
   private get canvas(): HTMLCanvasElement {
@@ -275,14 +286,16 @@ export class SceneComponent implements AfterViewInit {
   private addLights() {
     const light = new PointLight(0xffffff);
     light.position.copy(this.pivot.position).y = 200;
+    light.position.x = 200;
+    light.lookAt(this.pivot.position);
 
-    this.scene.add(new HemisphereLight(0xffffbb, 0x080820, 1));
-    // this.scene.add(light);
+    // this.scene.add(new HemisphereLight(0xffffbb, 0x080820, 1));
+    this.scene.add(light);
   }
 
   normalize(min, max) {
     const delta = max - min;
-    return function(val) {
+    return function (val) {
       return (val - min) / delta;
     };
   }
@@ -353,9 +366,10 @@ export class SceneComponent implements AfterViewInit {
       this.nearClippingPane,
       this.farClippingPane
     );
-    this.camera.position.x = 10;
-    this.camera.position.y = 100;
-    this.camera.position.z = 300;
+    this.camera.position.copy(this.pivot.position);
+    this.camera.position.z = 150;
+    this.camera.position.y = 60;
+    this.camera.lookAt(this.pivot.position)
   }
 
   private createScene() {
@@ -377,9 +391,9 @@ export class SceneComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.createScene();
-    this.createCamera();
     this.setupPlane(true);
     this.addLights();
+    this.createCamera();
     this.startRendering();
     this.addControls();
   }
