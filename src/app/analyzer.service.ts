@@ -8,7 +8,7 @@ export class AnalyzerService {
 
   public readonly FFT_SIZE = 1024;
 
-  private dataArray: Uint8Array = new Uint8Array().fill(0);
+  private dataArray;
   private audioCtx: AudioContext;
   private analyzer: AnalyserNode;
   private source: MediaStreamAudioSourceNode;
@@ -24,7 +24,7 @@ export class AnalyzerService {
     this.analyzer = this.audioCtx.createAnalyser();
     this.analyzer.fftSize = this.FFT_SIZE;
     this.source = this.audioCtx.createMediaElementSource(this.audioElement);
-
+    this.analyzer.smoothingTimeConstant = 0.7;
     this.source.connect(this.analyzer);
     this.analyzer.connect(this.audioCtx.destination);
     this.dataArray = new Uint8Array(this.analyzer.frequencyBinCount);

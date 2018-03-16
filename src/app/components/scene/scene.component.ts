@@ -63,7 +63,7 @@ export class SceneComponent implements AfterViewInit {
   public cellSize = 1;
   public planeMesh: Mesh;
   public pivot: Group;
-  public gridSize = 170;
+  public gridSize = 220;
 
   public gridVertices = new Array<Array<Vector3>>();
 
@@ -221,7 +221,8 @@ export class SceneComponent implements AfterViewInit {
     const light = new PointLight(0xffffff);
     light.position.copy(this.pivot.position).y = 200;
 
-    this.scene.add(light);
+    this.scene.add(new HemisphereLight( 0xffffbb, 0x080820, 1 ));
+    // this.scene.add(light);
   }
 
   normalize(min, max) {
