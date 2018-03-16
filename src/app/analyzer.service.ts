@@ -19,6 +19,7 @@ export class AnalyzerService {
   constructor() {
     this.audioElement = new Audio();
     this.audioElement.volume = 0.1;
+    this.audioElement.crossOrigin = 'anonymous';
 
     this.audioCtx = new AudioContext();
     this.analyzer = this.audioCtx.createAnalyser();
