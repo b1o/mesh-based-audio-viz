@@ -43,6 +43,14 @@ export class AnalyzerService {
     this.audioElement.play();
   }
 
+  public changeSmoothValue(value) {
+    if (value < 0 || value > 1) {
+      console.error('smooth value must be between 0 and 1');
+      throw new Error('smooth value must be between 0 and 1');
+    }
+    this.analyzer.smoothingTimeConstant = value;
+  }
+
   public changeVolume(value) {
     if (value < 0 || value > 1) {
       throw new Error('volume must be between 0 and 1');

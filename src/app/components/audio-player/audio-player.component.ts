@@ -27,7 +27,7 @@ export class AudioPlayerComponent implements OnInit, OnChanges {
 
   private animation;
 
-  constructor(private cd: ChangeDetectorRef, private sanitizer: DomSanitizer, private analyzerService: AnalyzerService) {}
+  constructor(private cd: ChangeDetectorRef, private sanitizer: DomSanitizer, private analyzerService: AnalyzerService) { }
 
   ngOnInit() {
     // this.loadFile(this.file);
@@ -54,12 +54,18 @@ export class AudioPlayerComponent implements OnInit, OnChanges {
 
   loadFile(file) {
     this.proccessing = true;
-    const reader = new FileReader();
+    if (file instanceof File) {
+      const reader = new FileReader();
+      console.log('loading file');
 
-    reader.onload = (event: any) => {
-    this.proccessing = false;
-      this.analyzerService.setFile(event.target.result);
-    };
-    reader.readAsDataURL(file);
+      reader.onload = (event: any) => {
+        this.proccessing = false;
+        this.analyzerService.setFile(event.target.result);
+        console.log('loading finished');
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.analyzerService.setFile(file);
+    }
   }
 }

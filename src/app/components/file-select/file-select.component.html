@@ -1,4 +1,14 @@
-<input #fileSelect type="file">
-or
-<input [(ngModel)]="soundCloudSrc" type="text" placeholder="Paste a link from soundcloud">
-<button (click)="newFile(fileSelect.files[0])">Go!</button>
+<div style="display: flex; flex-direction: column;">
+  <div>
+    <label for="upload">Upload your own song</label>
+    <input #fileSelect id="upload" type="file" (change)="src = $event.target.files[0]; newFile()" placeholder="Choose your songs">
+
+  </div>
+
+  <div style="margin-top:5px;">
+    <label for="song">or choose from the example songs</label>
+    <select (change)="newFile()" [(ngModel)]="src" name="song" id="song">
+      <option value="/assets/music/{{song.name}}" *ngFor="let song of songs">{{song.name}}</option>
+    </select>
+  </div>
+</div>

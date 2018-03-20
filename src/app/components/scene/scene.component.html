@@ -1,10 +1,36 @@
 <canvas #canvas></canvas>
-<div>
-  <input (change)="toggleWireframe()" [checked]="wireframe" type="checkbox" id="wireframe" name="wireframe" value="wireframe">
-  <label for="wireframe">wireframe</label>
-</div>
+<div class="actions" style="padding: 10px;">
+  <div class="scene-actions">
+    <div>
+      <input (change)="toggleWireframe()" [checked]="wireframe" type="checkbox" id="wireframe" name="wireframe" value="wireframe">
+      <label for="wireframe">wireframe</label>
+    </div>
 
-<div>
-  <input (change)="toggleShading()" [checked]="shading" type="checkbox" id="shading" name="shading" value="shading">
-  <label for="shading">shading</label>
+    <div>
+      <input (change)="toggleShading()" [checked]="shading" type="checkbox" id="shading" name="shading" value="shading">
+      <label for="shading">shading</label>
+    </div>
+
+    <div style="margin-left:5px;">
+      <label for="smooth">Smoothness</label>
+      <input type="number" min="0" max="1" step="0.01" id="smooth" (change)="onSmoothenessChange($event.target.value)" [value]="smootheness">
+
+    </div>
+    <div style="margin-left:5px;">
+      Views:
+      <button (click)="changeView('spectrogram')">Spectrogram</button>
+      <button (click)="changeView('pyramid')">Pyramid</button>
+    </div>
+
+  </div>
+  <hr>
+  <div>
+    <app-file-select (file)="player.loadFile($event)"></app-file-select>
+
+  </div>
+  <hr>
+  <div>
+    <app-audio-player #player></app-audio-player>
+
+  </div>
 </div>
