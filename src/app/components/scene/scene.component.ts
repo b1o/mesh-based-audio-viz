@@ -86,6 +86,8 @@ export class SceneComponent implements AfterViewInit {
   public font: Font;
   public texts = [];
 
+  public currentRow = 0;
+
   constructor(
     private analyzer: AnalyzerService,
     private cd: ChangeDetectorRef
@@ -200,7 +202,6 @@ export class SceneComponent implements AfterViewInit {
   }
 
   private convertRange(value, r1, r2) {
-
     return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
   }
 
@@ -308,16 +309,49 @@ export class SceneComponent implements AfterViewInit {
     this.planeGeom.colorsNeedUpdate = true;
   }
 
+  private spectogram() {
+    const vertexIndex = 0;
+    const data = this.analyzer.getAnalyzerData();
+
+    for (let i = 0; i < this.gridSize; i++) {
+      this.gridVertices[this.currentRow][i].y = data[i];
+      this.gridVertices[this.currentRow + 1][i].y = data[i];
+      for (const color of this.gridVertices[this.currentRow][i]['color']) {
+        color.setHSL(
+          this.convertRange(data[i], [0, 255], [1, 0]),
+          0.5,
+          this.convertRange(data[i], [0, 255], [0, 0.5])
+        );
+      }
+      for (const color of this.gridVertices[this.currentRow + 1][i]['color']) {
+        color.setHSL(
+          this.convertRange(data[i], [0, 255], [1, 0]),
+          0.5,
+          this.convertRange(data[i], [0, 255], [0, 0.5])
+        );
+      }
+    }
+    this.currentRow += 2;
+    if (this.currentRow >= this.gridSize) {
+      this.currentRow = 0;
+    }
+
+
+
+    this.planeGeom.verticesNeedUpdate = true;
+    this.planeGeom.colorsNeedUpdate = true;
+  }
+
   private get canvas(): HTMLCanvasElement {
     return this.canvasRef.nativeElement;
   }
 
   private addLights() {
-    const light = new SpotLight(0xffffff, 1, 200, 0.5, 1, 0);
-    light.castShadow = true;
-    light.position.copy(this.pivot.position);
-    light.position.y = 300;
-    light.target = this.pivot;
+    const light = new HemisphereLight(0xffffff, 0x0f0f0f, 1);
+    // light.castShadow = true;
+    // light.position.copy(this.pivot.position);
+    // light.position.y = 300;
+    // light.target = this.pivot;
 
     // this.scene.add(new HemisphereLight(0xffffbb, 0x080820, 1));
     this.scene.add(light);
@@ -374,7 +408,8 @@ export class SceneComponent implements AfterViewInit {
       material.wireframe = component.wireframe;
       material.flatShading = component.shading;
 
-      component.test();
+      // component.test();
+      component.spectogram();
       component.render();
     })();
   }

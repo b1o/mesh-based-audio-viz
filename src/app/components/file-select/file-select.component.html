@@ -1,2 +1,4 @@
 <input #fileSelect type="file">
+or
+<input [(ngModel)]="soundCloudSrc" type="text" placeholder="Paste a link from soundcloud">
 <button (click)="newFile(fileSelect.files[0])">Go!</button>

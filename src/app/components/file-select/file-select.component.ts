@@ -9,6 +9,8 @@ export class FileSelectComponent implements OnInit {
 
   @Output() file = new EventEmitter();
 
+  soundCloudSrc;
+
   constructor() { }
 
   ngOnInit() {
