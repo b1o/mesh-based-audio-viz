@@ -4,7 +4,9 @@ import {
   ViewChild,
   ElementRef,
   HostListener,
-  AfterViewInit
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
 } from '@angular/core';
 
 import './js/EnableThreeExamples';
@@ -53,7 +55,8 @@ import { TextCreator } from '../../text-creator';
 @Component({
   selector: 'app-scene',
   templateUrl: './scene.component.html',
-  styleUrls: ['./scene.component.css']
+  styleUrls: ['./scene.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SceneComponent implements AfterViewInit {
   @ViewChild('canvas') canvasRef: ElementRef;
@@ -63,6 +66,9 @@ export class SceneComponent implements AfterViewInit {
   private scene: Scene;
   private controls: OrbitControls;
   private FOV = 60;
+
+  public wireframe = false;
+  public shading = false;
 
   public nearClippingPane = 1;
   public farClippingPane = 5000;
@@ -78,7 +84,7 @@ export class SceneComponent implements AfterViewInit {
   public font: Font;
   public texts = [];
 
-  constructor(private analyzer: AnalyzerService) {
+  constructor(private analyzer: AnalyzerService, private cd: ChangeDetectorRef) {
     this.render = this.render.bind(this);
     for (let x = 0; x <= this.gridSize; x++) {
       const tempArr = [];
@@ -137,13 +143,13 @@ export class SceneComponent implements AfterViewInit {
           new Color(0x0000ff)
         );
 
-        face.vertexColors[0] = new Color(0, 255, 0);
-        face.vertexColors[1] = new Color(0, 255, 0);
-        face.vertexColors[2] = new Color(0, 255, 0);
+        face.vertexColors[0] = new Color(0, 0, 0);
+        face.vertexColors[1] = new Color(0, 0, 0);
+        face.vertexColors[2] = new Color(0, 0, 0);
 
-        face2.vertexColors[0] = new Color(0, 255, 0);
-        face2.vertexColors[1] = new Color(0, 255, 0);
-        face2.vertexColors[2] = new Color(0, 255, 0);
+        face2.vertexColors[0] = new Color(0, 0, 0);
+        face2.vertexColors[1] = new Color(0, 0, 0);
+        face2.vertexColors[2] = new Color(0, 0, 0);
 
         this.planeGeom.vertices[vertexIndex]['color'].push(
           face.vertexColors[0]
@@ -177,7 +183,7 @@ export class SceneComponent implements AfterViewInit {
 
     const object = new Mesh(
       this.planeGeom,
-      new MeshPhongMaterial({ vertexColors: VertexColors, wireframe: true })
+      new MeshPhongMaterial({ vertexColors: VertexColors, flatShading: true })
     );
     object.castShadow = true;
     object.receiveShadow = true;
@@ -243,12 +249,25 @@ export class SceneComponent implements AfterViewInit {
     this.planeGeom.colorsNeedUpdate = true;
   }
 
+  toggleWireframe() {
+    this.wireframe = !this.wireframe;
+    this.cd.detectChanges();
+  }
+
+  toggleShading() {
+    this.shading = !this.shading;
+    const material = this.planeMesh.material as MeshPhongMaterial;
+    material.needsUpdate = true;
+    this.cd.detectChanges();
+  }
+
+
   private test() {
     const data = this.analyzer.getAnalyzerData();
     let colorIndex = this.gridSize / 2;
 
     for (
-      let circleOffset = 5;
+      let circleOffset = 0;
       circleOffset <= this.gridSize / 2;
       circleOffset++
     ) {
@@ -265,16 +284,21 @@ export class SceneComponent implements AfterViewInit {
       const all = column1.concat(column2, row1, row2);
 
       for (const vertex of all) {
-        vertex.y = this.convertRange(data[colorIndex], [0, 105], [0,20]);
-        for(const color of vertex['color']) {
-          color.r = this.convertRange(data[colorIndex], [10, 105], [0, 255])
-          color.g = this.convertRange(data[colorIndex], [10, 105], [255, 0])
+        vertex.y = this.convertRange(data[colorIndex], [0, 105], [0, 20]);
+        for (const color of vertex['color']) {
+          color.setHSL(
+            this.convertRange(data[colorIndex], [0, 128], [0.3, 0]),
+            1,
+            0.5
+          );
+          // color.g = this.convertRange(data[colorIndex], [10, 105], [255, 0])
         }
       }
+
       colorIndex--;
     }
 
-    this.pivot.rotation.y += 0.01;
+    // this.pivot.rotation.y += 0.01;
     this.planeGeom.verticesNeedUpdate = true;
     this.planeGeom.colorsNeedUpdate = true;
   }
@@ -284,10 +308,9 @@ export class SceneComponent implements AfterViewInit {
   }
 
   private addLights() {
-    const light = new PointLight(0xffffff);
-    light.position.copy(this.pivot.position).y = 200;
-    light.position.x = 200;
-    light.lookAt(this.pivot.position);
+    const light = new HemisphereLight(0xffffff, 0.3);
+    // light.position.copy(this.pivot.position).y = 200;
+    // light.lookAt(this.pivot.position);
 
     // this.scene.add(new HemisphereLight(0xffffbb, 0x080820, 1));
     this.scene.add(light);
@@ -295,7 +318,7 @@ export class SceneComponent implements AfterViewInit {
 
   normalize(min, max) {
     const delta = max - min;
-    return function (val) {
+    return function(val) {
       return (val - min) / delta;
     };
   }
@@ -339,6 +362,11 @@ export class SceneComponent implements AfterViewInit {
       if (component.planeMesh) {
         component.camera.lookAt(component.pivot.position);
       }
+
+      const material = component.planeMesh.material as MeshPhongMaterial;
+      material.wireframe = component.wireframe;
+      material.flatShading = component.shading;
+
       component.test();
       component.render();
     })();
@@ -369,7 +397,7 @@ export class SceneComponent implements AfterViewInit {
     this.camera.position.copy(this.pivot.position);
     this.camera.position.z = 150;
     this.camera.position.y = 60;
-    this.camera.lookAt(this.pivot.position)
+    this.camera.lookAt(this.pivot.position);
   }
 
   private createScene() {

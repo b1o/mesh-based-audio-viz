@@ -1,2 +1,10 @@
 <canvas #canvas></canvas>
+<div>
+  <input (change)="toggleWireframe()" [checked]="wireframe" type="checkbox" id="wireframe" name="wireframe" value="wireframe">
+  <label for="wireframe">wireframe</label>
+</div>
 
+<div>
+  <input (change)="toggleShading()" [checked]="shading" type="checkbox" id="shading" name="shading" value="shading">
+  <label for="shading">shading</label>
+</div>
