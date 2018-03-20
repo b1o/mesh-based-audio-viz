@@ -25,7 +25,10 @@ export class AnalyzerService {
     this.analyzer = this.audioCtx.createAnalyser();
     this.analyzer.fftSize = this.FFT_SIZE;
     this.source = this.audioCtx.createMediaElementSource(this.audioElement);
-    this.analyzer.smoothingTimeConstant = 0.7;
+    this.analyzer.smoothingTimeConstant = 0.4;
+    console.log('max', this.analyzer.maxDecibels);
+    this.analyzer.minDecibels = -90;
+    this.analyzer.maxDecibels = -10;
     this.source.connect(this.analyzer);
     this.analyzer.connect(this.audioCtx.destination);
     this.dataArray = new Uint8Array(this.analyzer.frequencyBinCount);

@@ -47,7 +47,9 @@ import {
   Font,
   TextGeometry,
   Blending,
-  NormalBlending
+  NormalBlending,
+  SpotLight,
+  SpotLightHelper
 } from 'three';
 import { AnalyzerService } from '../../analyzer.service';
 import { TextCreator } from '../../text-creator';
@@ -84,7 +86,10 @@ export class SceneComponent implements AfterViewInit {
   public font: Font;
   public texts = [];
 
-  constructor(private analyzer: AnalyzerService, private cd: ChangeDetectorRef) {
+  constructor(
+    private analyzer: AnalyzerService,
+    private cd: ChangeDetectorRef
+  ) {
     this.render = this.render.bind(this);
     for (let x = 0; x <= this.gridSize; x++) {
       const tempArr = [];
@@ -195,6 +200,7 @@ export class SceneComponent implements AfterViewInit {
   }
 
   private convertRange(value, r1, r2) {
+
     return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
   }
 
@@ -261,7 +267,6 @@ export class SceneComponent implements AfterViewInit {
     this.cd.detectChanges();
   }
 
-
   private test() {
     const data = this.analyzer.getAnalyzerData();
     let colorIndex = this.gridSize / 2;
@@ -284,10 +289,10 @@ export class SceneComponent implements AfterViewInit {
       const all = column1.concat(column2, row1, row2);
 
       for (const vertex of all) {
-        vertex.y = this.convertRange(data[colorIndex], [0, 105], [0, 20]);
+        vertex.y = this.convertRange(data[colorIndex], [0, 255], [0, 40]);
         for (const color of vertex['color']) {
           color.setHSL(
-            this.convertRange(data[colorIndex], [0, 128], [0.3, 0]),
+            this.convertRange(data[colorIndex], [0, 255], [0.3, 0]),
             1,
             0.5
           );
@@ -298,7 +303,7 @@ export class SceneComponent implements AfterViewInit {
       colorIndex--;
     }
 
-    // this.pivot.rotation.y += 0.01;
+    this.pivot.rotation.y += 0.01;
     this.planeGeom.verticesNeedUpdate = true;
     this.planeGeom.colorsNeedUpdate = true;
   }
@@ -308,9 +313,11 @@ export class SceneComponent implements AfterViewInit {
   }
 
   private addLights() {
-    const light = new HemisphereLight(0xffffff, 0.3);
-    // light.position.copy(this.pivot.position).y = 200;
-    // light.lookAt(this.pivot.position);
+    const light = new SpotLight(0xffffff, 1, 200, 0.5, 1, 0);
+    light.castShadow = true;
+    light.position.copy(this.pivot.position);
+    light.position.y = 300;
+    light.target = this.pivot;
 
     // this.scene.add(new HemisphereLight(0xffffbb, 0x080820, 1));
     this.scene.add(light);
