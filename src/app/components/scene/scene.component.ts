@@ -119,6 +119,14 @@ export class SceneComponent implements AfterViewInit {
     this.analyzer.changeSmoothValue(value);
   }
 
+  public fuckMeUp() {
+    this.changeView('circle');
+    this.wireframe = true;
+    this.camera.position.copy(this.pivot.position);
+    this.camera.position.y = -50;
+    this.camera.lookAt(this.pivot.position);
+  }
+
   private setupPlane() {
     this.planeGeom = new Geometry();
     const cellSize = this.cellSize;
@@ -208,6 +216,7 @@ export class SceneComponent implements AfterViewInit {
       new MeshPhongMaterial({
         vertexColors: FaceColors,
         flatShading: false,
+        side: DoubleSide
       })
     );
     this.planeMesh.castShadow = true;
@@ -220,12 +229,11 @@ export class SceneComponent implements AfterViewInit {
   }
 
   public setupRing() {
-    const geometry = new RingGeometry(0, 100, 32, 100);
-    const material = new MeshBasicMaterial({
-      color: 0xffff00,
-      side: DoubleSide,
+    const geometry = new RingGeometry(0, 100, 32, 200);
+    const material = new MeshPhongMaterial({
       wireframe: true,
-      vertexColors: VertexColors
+      vertexColors: FaceColors,
+      side: DoubleSide
     });
     const mesh = new Mesh(geometry, material);
     mesh.lookAt(new Vector3(0, 1, 0));
@@ -263,6 +271,8 @@ export class SceneComponent implements AfterViewInit {
     }
 
     console.log(this.planeGeom.colors.length);
+    this.planeGeom.computeFaceNormals();
+    this.planeGeom.computeVertexNormals();
 
     this.pivot = new Group();
     this.scene.add(this.pivot);
@@ -275,18 +285,18 @@ export class SceneComponent implements AfterViewInit {
     const data = this.analyzer.getAnalyzerData();
 
     let height = 0;
-    for (let i = 0; i < this.planeGeom.vertices.length; i += 32) {
+    for (let i = 0; i < this.planeGeom.vertices.length - 32; i += 32) {
       for (let vertexIndex = i; vertexIndex < i + 32; vertexIndex++) {
         this.planeGeom.vertices[vertexIndex].z = this.convertRange(
           data[height],
           [0, 255],
-          [0, 30]
+          [0, 60]
         );
 
         for (const color of this.planeGeom.vertices[vertexIndex]['color']) {
           color.setHSL(
             this.convertRange(data[height], [0, 255], [0.3, 0]),
-            0.5,
+            1,
             0.5
           );
         }
@@ -295,6 +305,9 @@ export class SceneComponent implements AfterViewInit {
     }
     this.planeGeom.colorsNeedUpdate = true;
     this.planeGeom.verticesNeedUpdate = true;
+
+    this.pivot.rotation.y +=
+      data.reduce((a, b) => a + b, 0) / data.length / 255;
   }
 
   private convertRange(value, r1, r2) {

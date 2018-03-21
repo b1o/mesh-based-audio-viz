@@ -20,7 +20,7 @@ export class AudioPlayerComponent implements OnInit, OnChanges {
   @Input() file;
 
 
-  public currentVolume = 0.1;
+  public currentVolume = 1;
 
   public proccessing = false;
   public fileSrc;
@@ -31,7 +31,7 @@ export class AudioPlayerComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     // this.loadFile(this.file);
-
+    this.onVolumeChange(this.currentVolume);
   }
 
   ngOnChanges() {
