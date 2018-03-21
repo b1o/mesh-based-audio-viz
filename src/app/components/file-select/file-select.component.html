@@ -8,7 +8,7 @@
   <div style="margin-top:5px;">
     <label for="song">or choose from the example songs</label>
     <select (change)="newFile()" [(ngModel)]="src" name="song" id="song">
-      <option value="/assets/music/{{song.name}}" *ngFor="let song of songs">{{song.name}}</option>
+      <option value="assets/music/{{song.name}}" *ngFor="let song of songs">{{song.name}}</option>
     </select>
   </div>
 </div>

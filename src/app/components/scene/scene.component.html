@@ -11,6 +11,11 @@
       <label for="shading">shading</label>
     </div>
 
+    <div>
+        <input (change)="hues = !hues" [checked]="hues" type="checkbox" id="shading" name="hues" value="hues">
+        <label for="hues">hues</label>
+      </div>
+
     <div style="margin-left:5px;">
       <label for="smooth">Smoothness</label>
       <input type="number" min="0" max="1" step="0.01" id="smooth" (change)="onSmoothenessChange($event.target.value)" [value]="smootheness">

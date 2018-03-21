@@ -80,20 +80,28 @@ export class SceneComponent implements AfterViewInit {
   public planeMesh: Mesh;
   public pivot: Group;
   public loader: FontLoader;
-  public gridSize = 200;
+  public gridSize = 150;
 
   public gridVertices = new Array<Array<Vector3>>();
   public font: Font;
   public texts = [];
 
-  public smootheness = 0.4;
+  public smootheness = 0.7;
   public currentRow = 0;
+
+  private dataHistory = [];
+  private previousCameraPos;
+
+  public view = 'pyramid';
+
+  public hues = true;
 
   constructor(
     private analyzer: AnalyzerService,
     private cd: ChangeDetectorRef
   ) {
     this.render = this.render.bind(this);
+    this.analyzer.changeSmoothValue(this.smootheness);
     for (let x = 0; x <= this.gridSize; x++) {
       const tempArr = [];
       for (let y = 0; y <= this.gridSize; y++) {
@@ -195,7 +203,7 @@ export class SceneComponent implements AfterViewInit {
 
     const object = new Mesh(
       this.planeGeom,
-      new MeshPhongMaterial({ vertexColors: VertexColors, flatShading: true })
+      new MeshPhongMaterial({ vertexColors: FaceColors, flatShading: false })
     );
     object.castShadow = true;
     object.receiveShadow = true;
@@ -273,6 +281,23 @@ export class SceneComponent implements AfterViewInit {
     this.cd.detectChanges();
   }
 
+  private getMatrixSquares(circleOffset: number) {
+    let row1 = this.gridVertices[circleOffset];
+    let row2 = this.gridVertices[this.gridSize - circleOffset];
+
+    row1 = row1.slice(circleOffset, this.gridSize - circleOffset + 1);
+    row2 = row2.slice(circleOffset, this.gridSize - circleOffset + 1);
+
+    let column1 = this.gridVertices.map(v => v[circleOffset]);
+    column1 = column1.slice(circleOffset, this.gridSize - circleOffset + 1);
+
+    let column2 = this.gridVertices.map(v => v[this.gridSize - circleOffset]);
+    column2 = column2.slice(circleOffset, this.gridSize - circleOffset + 1);
+
+    const all = column1.concat(column2, row1, row2);
+    return all;
+  }
+
   private test() {
     const data = this.analyzer.getAnalyzerData();
     let colorIndex = this.gridSize / 2;
@@ -282,27 +307,19 @@ export class SceneComponent implements AfterViewInit {
       circleOffset <= this.gridSize / 2;
       circleOffset++
     ) {
-      let row1 = this.gridVertices[circleOffset];
-      let row2 = this.gridVertices[this.gridSize - circleOffset];
-      row1 = row1.slice(circleOffset, this.gridSize - circleOffset + 1);
-      row2 = row2.slice(circleOffset, this.gridSize - circleOffset + 1);
-
-      let column1 = this.gridVertices.map(v => v[circleOffset]);
-      column1 = column1.slice(circleOffset, this.gridSize - circleOffset + 1);
-      let column2 = this.gridVertices.map(v => v[this.gridSize - circleOffset]);
-      column2 = column2.slice(circleOffset, this.gridSize - circleOffset + 1);
-
-      const all = column1.concat(column2, row1, row2);
+      const all = this.getMatrixSquares(circleOffset);
 
       for (const vertex of all) {
         vertex.y = this.convertRange(data[colorIndex], [0, 255], [0, 40]);
-        for (const color of vertex['color']) {
-          color.setHSL(
-            this.convertRange(data[colorIndex], [0, 255], [0.3, 0]),
-            1,
-            0.5
-          );
-          // color.g = this.convertRange(data[colorIndex], [10, 105], [255, 0])
+
+        if (data[colorIndex] > 0) {
+          for (let i = 0; i < vertex['color'].length; i++) {
+            vertex['color'][i].setHSL(
+              this.convertRange(data[colorIndex], [0, 255], [0.3, 0]),
+              1,
+              0.5
+            );
+          }
         }
       }
 
@@ -314,11 +331,11 @@ export class SceneComponent implements AfterViewInit {
     this.planeGeom.colorsNeedUpdate = true;
   }
 
-  private dataHistory = [];
-  private previousCameraPos;
 
-  public view = 'pyramid';
+
+
   public changeView(view) {
+    this.dataHistory = [];
     if (view == 'spectrogram') {
       this.previousCameraPos = this.camera.position;
       this.camera.position.copy(this.pivot.position);
@@ -404,7 +421,7 @@ export class SceneComponent implements AfterViewInit {
     });
     this.renderer.setPixelRatio(devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    
+
 
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
@@ -425,11 +442,11 @@ export class SceneComponent implements AfterViewInit {
 
       if (component.view == 'pyramid') {
         component.test();
-
       } else {
         component.spectogram();
 
       }
+
       component.render();
     })();
   }
@@ -439,7 +456,7 @@ export class SceneComponent implements AfterViewInit {
     this.canvas.style.width = window.innerWidth + 'px';
     this.canvas.style.height = window.innerHeight + 'px';
     console.log(
-      'onResize: ' + window.innerWidth + ', ' +window.innerHeight
+      'onResize: ' + window.innerWidth + ', ' + window.innerHeight
     );
 
     this.camera.aspect = window.innerWidth / window.innerHeight;
