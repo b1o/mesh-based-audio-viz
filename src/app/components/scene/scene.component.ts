@@ -49,7 +49,11 @@ import {
   Blending,
   NormalBlending,
   SpotLight,
-  SpotLightHelper
+  SpotLightHelper,
+  MeshStandardMaterial,
+  DoubleSide,
+  RingGeometry,
+  RingBufferGeometry
 } from 'three';
 import { AnalyzerService } from '../../analyzer.service';
 import { TextCreator } from '../../text-creator';
@@ -115,12 +119,10 @@ export class SceneComponent implements AfterViewInit {
     this.analyzer.changeSmoothValue(value);
   }
 
-  private setupPlane(initial?) {
-    console.log(this.font);
+  private setupPlane() {
     this.planeGeom = new Geometry();
     const cellSize = this.cellSize;
     const triangleIndex = 0;
-    console.log(initial);
     let vertexIndex = 0;
     const vretexOffset = cellSize * 1.2;
 
@@ -201,17 +203,98 @@ export class SceneComponent implements AfterViewInit {
     this.planeGeom.computeVertexNormals();
     this.planeGeom.computeFaceNormals();
 
-    const object = new Mesh(
+    this.planeMesh = new Mesh(
       this.planeGeom,
-      new MeshPhongMaterial({ vertexColors: FaceColors, flatShading: false })
+      new MeshPhongMaterial({
+        vertexColors: FaceColors,
+        flatShading: false,
+      })
     );
-    object.castShadow = true;
-    object.receiveShadow = true;
-    this.planeMesh = object;
+    this.planeMesh.castShadow = true;
+    this.planeMesh.receiveShadow = true;
+
     this.pivot = new Group();
     this.scene.add(this.pivot);
     this.pivot.add(this.planeMesh);
     this.pivot.position.copy(this.planeGeom.center());
+  }
+
+  public setupRing() {
+    const geometry = new RingGeometry(0, 100, 32, 100);
+    const material = new MeshBasicMaterial({
+      color: 0xffff00,
+      side: DoubleSide,
+      wireframe: true,
+      vertexColors: VertexColors
+    });
+    const mesh = new Mesh(geometry, material);
+    mesh.lookAt(new Vector3(0, 1, 0));
+    this.planeGeom = geometry;
+    this.planeMesh = mesh;
+    this.planeMesh.castShadow = true;
+    this.planeMesh.receiveShadow = true;
+    mesh.position.set(0, 0, 0);
+    console.log(this.planeGeom.vertices);
+    console.log(this.planeGeom.faces);
+
+    for (let i = 0; i < this.planeGeom.faces.length; i++) {
+      const f = this.planeGeom.faces[i];
+      f.vertexColors[0] = new Color(0, 255, 0);
+      f.vertexColors[1] = new Color(0, 255, 0);
+      f.vertexColors[2] = new Color(0, 255, 0);
+
+      if (this.planeGeom.vertices[f.a]['color']) {
+        this.planeGeom.vertices[f.a]['color'].push(f.vertexColors[0]);
+      } else {
+        this.planeGeom.vertices[f.a]['color'] = [f.vertexColors[0]];
+      }
+
+      if (this.planeGeom.vertices[f.b]['color']) {
+        this.planeGeom.vertices[f.b]['color'].push(f.vertexColors[1]);
+      } else {
+        this.planeGeom.vertices[f.b]['color'] = [f.vertexColors[1]];
+      }
+
+      if (this.planeGeom.vertices[f.c]['color']) {
+        this.planeGeom.vertices[f.c]['color'].push(f.vertexColors[2]);
+      } else {
+        this.planeGeom.vertices[f.c]['color'] = [f.vertexColors[2]];
+      }
+    }
+
+    console.log(this.planeGeom.colors.length);
+
+    this.pivot = new Group();
+    this.scene.add(this.pivot);
+    this.pivot.add(this.planeMesh);
+
+    this.pivot.position.copy(geometry.center());
+  }
+
+  public updateRing() {
+    const data = this.analyzer.getAnalyzerData();
+
+    let height = 0;
+    for (let i = 0; i < this.planeGeom.vertices.length; i += 32) {
+      for (let vertexIndex = i; vertexIndex < i + 32; vertexIndex++) {
+        this.planeGeom.vertices[vertexIndex].z = this.convertRange(
+          data[height],
+          [0, 255],
+          [0, 30]
+        );
+
+        for (const color of this.planeGeom.vertices[vertexIndex]['color']) {
+          color.setHSL(
+            this.convertRange(data[height], [0, 255], [0.3, 0]),
+            0.5,
+            0.5
+          );
+        }
+      }
+      height++;
+    }
+    this.planeGeom.colorsNeedUpdate = true;
+    this.planeGeom.verticesNeedUpdate = true;
   }
 
   private convertRange(value, r1, r2) {
@@ -326,28 +409,45 @@ export class SceneComponent implements AfterViewInit {
       colorIndex--;
     }
 
-    this.pivot.rotation.y += 0.01;
+    this.pivot.rotation.y +=
+      data.reduce((a, b) => a + b, 0) / data.length / 255;
+
     this.planeGeom.verticesNeedUpdate = true;
     this.planeGeom.colorsNeedUpdate = true;
   }
 
-
-
-
   public changeView(view) {
+    console.log(view);
     this.dataHistory = [];
-    if (view == 'spectrogram') {
+    this.scene.remove(this.pivot);
+    this.pivot = null;
+    this.planeMesh = null;
+    this.planeGeom = null;
+    this.gridVertices =  new Array<Array<Vector3>>();
+    for (let x = 0; x <= this.gridSize; x++) {
+      const tempArr = [];
+      for (let y = 0; y <= this.gridSize; y++) {
+        tempArr.push(new Vector3(0, 0, 0));
+      }
+      this.gridVertices.push(tempArr);
+    }
+
+    if (view === 'spectrogram') {
+      this.setupPlane();
       this.previousCameraPos = this.camera.position;
       this.camera.position.copy(this.pivot.position);
       this.camera.position.y = 400;
       this.pivot.rotation.y = 0;
+    } else if (view === 'pyramid') {
+      this.setupPlane();
     } else {
-      if (this.previousCameraPos) {
-        this.camera.position.copy(this.previousCameraPos);
-
-      }
+      this.setupRing();
     }
     this.view = view;
+    this.planeGeom.computeFaceNormals();
+    this.planeGeom.computeMorphNormals();
+    this.planeGeom.verticesNeedUpdate = true;
+    this.planeGeom.colorsNeedUpdate = true;
   }
 
   private spectogram() {
@@ -360,11 +460,15 @@ export class SceneComponent implements AfterViewInit {
 
     for (let i = 0; i < this.dataHistory.length; i++) {
       const vertices = this.gridVertices[i];
-      const currentData = this.dataHistory[i]
+      const currentData = this.dataHistory[i];
       for (let v = 0; v <= this.gridSize; v++) {
         vertices[v].y = currentData[v];
         for (const color of vertices[v]['color']) {
-          color.setHSL(this.convertRange(currentData[v], [0, 255], [0.3, 0]), 1, this.convertRange(currentData[v], [0, 255], [0, 0.5]));
+          color.setHSL(
+            this.convertRange(currentData[v], [0, 255], [0.3, 0]),
+            1,
+            this.convertRange(currentData[v], [0, 255], [0, 0.5])
+          );
         }
       }
     }
@@ -390,7 +494,7 @@ export class SceneComponent implements AfterViewInit {
 
   normalize(min, max) {
     const delta = max - min;
-    return function (val) {
+    return function(val) {
       return (val - min) / delta;
     };
   }
@@ -422,7 +526,6 @@ export class SceneComponent implements AfterViewInit {
     this.renderer.setPixelRatio(devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setClearColor(0x000000, 1);
@@ -440,13 +543,13 @@ export class SceneComponent implements AfterViewInit {
       material.wireframe = component.wireframe;
       material.flatShading = component.shading;
 
-      if (component.view == 'pyramid') {
+      if (component.view === 'pyramid') {
         component.test();
-      } else {
+      } else if (component.view === 'spectrogram') {
         component.spectogram();
-
+      } else {
+        component.updateRing();
       }
-
       component.render();
     })();
   }
@@ -455,9 +558,7 @@ export class SceneComponent implements AfterViewInit {
   public onResize(event: Event) {
     this.canvas.style.width = window.innerWidth + 'px';
     this.canvas.style.height = window.innerHeight + 'px';
-    console.log(
-      'onResize: ' + window.innerWidth + ', ' + window.innerHeight
-    );
+    console.log('onResize: ' + window.innerWidth + ', ' + window.innerHeight);
 
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
@@ -488,7 +589,8 @@ export class SceneComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.createScene();
-    this.setupPlane(true);
+    // this.setupPlane(true);
+    this.setupPlane();
     this.addLights();
     this.createCamera();
     this.startRendering();
