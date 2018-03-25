@@ -9,6 +9,7 @@ import {
   ChangeDetectorRef
 } from '@angular/core';
 
+import { MeshText2D, textAlign, SpriteText2D } from 'three-text2d';
 import './js/EnableThreeExamples';
 import 'three/examples/js/controls/OrbitControls';
 import {
@@ -81,7 +82,7 @@ export class SceneComponent implements AfterViewInit {
   public farClippingPane = 5000;
 
   public planeGeom = new Geometry();
-  public cellSize = 1;
+  public cellSize = 4;
   public planeMesh: Mesh;
   public pivot: Group;
   public loader: FontLoader;
@@ -91,13 +92,14 @@ export class SceneComponent implements AfterViewInit {
   public font: Font;
   public texts = [];
 
-  public smootheness = 0.7;
+  public smootheness = 0.9;
   public currentRow = 0;
 
   private dataHistory = [];
   private previousCameraPos;
 
-  public view = 'pyramid';
+  public view = 'circle';
+  public material = new MeshBasicMaterial({ color: new Color(0, 0, 100) });
 
   public hues = true;
 
@@ -114,6 +116,9 @@ export class SceneComponent implements AfterViewInit {
       }
       this.gridVertices.push(tempArr);
     }
+
+    this.loader = new FontLoader();
+
   }
 
   public onSmoothenessChange(value) {
@@ -166,6 +171,7 @@ export class SceneComponent implements AfterViewInit {
     }
 
     this.planeGeom.computeVertexNormals();
+
     this.planeGeom.computeFaceNormals();
 
     this.planeMesh = new Mesh(
@@ -176,6 +182,7 @@ export class SceneComponent implements AfterViewInit {
         side: DoubleSide
       })
     );
+    // this.planeMesh.lookAt(new Vector3(0, 1, 0));
     this.planeMesh.castShadow = true;
     this.planeMesh.receiveShadow = true;
     this.planeMesh.lookAt(new Vector3(0, 1, 0));
@@ -187,7 +194,7 @@ export class SceneComponent implements AfterViewInit {
   }
 
   public setupRing() {
-    const geometry = new RingGeometry(0, 100, 32, 200);
+    const geometry = new RingGeometry(0, 100, 32, 400);
     const material = new MeshPhongMaterial({
       wireframe: true,
       vertexColors: FaceColors,
@@ -239,11 +246,12 @@ export class SceneComponent implements AfterViewInit {
     this.pivot.position.copy(geometry.center());
   }
 
+
   public updateRing() {
     const data = this.analyzer.getAnalyzerData();
 
     let height = 0;
-    for (let i = 0; i < this.planeGeom.vertices.length - 32; i += 32) {
+    for (let i = 0; i < this.planeGeom.vertices.length; i += 32) {
       for (let vertexIndex = i; vertexIndex < i + 32; vertexIndex++) {
         this.planeGeom.vertices[vertexIndex].z = this.convertRange(
           data[height],
@@ -272,57 +280,6 @@ export class SceneComponent implements AfterViewInit {
     return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
   }
 
-  private updatePlane() {
-    const data = this.analyzer.getAnalyzerData();
-    let vertexIndex = 0;
-    const colors: Array<Color> = [];
-
-    const gridMiddleIndex = Math.floor(this.gridSize / 2);
-
-    const centerVertex = this.gridVertices[Math.floor(this.gridSize / 2)][
-      Math.floor(this.gridSize / 2)
-    ];
-    centerVertex.y = data[vertexIndex] / 5;
-
-    let outerCircleIndex = this.gridSize / 2;
-    vertexIndex = outerCircleIndex;
-    while (outerCircleIndex > 0) {
-      for (
-        let x = gridMiddleIndex - outerCircleIndex;
-        x <= gridMiddleIndex + outerCircleIndex;
-        x++
-      ) {
-        for (
-          let y = gridMiddleIndex - outerCircleIndex;
-          y <= gridMiddleIndex + outerCircleIndex;
-          y++
-        ) {
-          console.log(this.gridVertices[x][y]['color'].length);
-          for (const color of this.gridVertices[x][y]['color']) {
-            color.r = this.convertRange(
-              data[outerCircleIndex],
-              [0, 80],
-              [0, 255]
-            );
-            color.g = this.convertRange(
-              data[outerCircleIndex],
-              [0, 80],
-              [255, 0]
-            );
-          }
-          if (this.gridVertices[x][y] === centerVertex) {
-            continue;
-          }
-          this.gridVertices[x][y].y = data[outerCircleIndex] / 5;
-        }
-      }
-      outerCircleIndex--;
-    }
-
-    this.planeGeom.verticesNeedUpdate = true;
-    this.planeGeom.colorsNeedUpdate = true;
-  }
-
   toggleWireframe() {
     this.wireframe = !this.wireframe;
     this.cd.detectChanges();
@@ -335,7 +292,7 @@ export class SceneComponent implements AfterViewInit {
     this.cd.detectChanges();
   }
 
-  private test() {
+  private updatePlane() {
     const data = this.analyzer.getAnalyzerData();
     const colorIndex = this.gridSize / 2;
 
@@ -493,7 +450,7 @@ export class SceneComponent implements AfterViewInit {
 
   normalize(min, max) {
     const delta = max - min;
-    return function(val) {
+    return function (val) {
       return (val - min) / delta;
     };
   }
@@ -543,7 +500,7 @@ export class SceneComponent implements AfterViewInit {
       material.flatShading = component.shading;
 
       if (component.view === 'pyramid') {
-        component.test();
+        component.updatePlane();
       } else if (component.view === 'spectrogram') {
         component.spectogram();
       } else {
@@ -584,12 +541,13 @@ export class SceneComponent implements AfterViewInit {
     this.scene = new Scene();
     const size = 10;
     const divisions = 10;
+    this.scene.add(new AxesHelper(10));
   }
 
   ngAfterViewInit() {
     this.createScene();
     // this.setupPlane(true);
-    this.setupPlane();
+    this.changeView(this.view);
     this.addLights();
     this.createCamera();
     this.startRendering();
