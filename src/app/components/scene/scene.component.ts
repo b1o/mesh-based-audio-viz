@@ -140,84 +140,29 @@ export class SceneComponent implements AfterViewInit {
     const vertexIndex = 0;
     const vretexOffset = cellSize * 1.2;
 
-    // for (let x = 0; x <= this.gridSize; x++) {
-    //   for (let y = 0; y <= this.gridSize; y++) {
-    //     const cellOffset = new Vector3(x * cellSize, 0, y * cellSize);
+    for (let i = 0; i < this.planeGeom.faces.length; i++) {
+      const f = this.planeGeom.faces[i];
+      f.vertexColors[0] = new Color(0, 255, 0);
+      f.vertexColors[1] = new Color(0, 255, 0);
+      f.vertexColors[2] = new Color(0, 255, 0);
 
-    //     const vertex = new Vector3(
-    //       x * cellSize - vretexOffset,
-    //       0,
-    //       y * cellSize - vretexOffset
-    //     );
+      if (this.planeGeom.vertices[f.a]['color']) {
+        this.planeGeom.vertices[f.a]['color'].push(f.vertexColors[0]);
+      } else {
+        this.planeGeom.vertices[f.a]['color'] = [f.vertexColors[0]];
+      }
 
-    //     vertex['vertexIndex'] = vertexIndex;
-    //     vertex['color'] = [];
-    //     this.gridVertices[x][y] = vertex;
-    //     this.planeGeom.vertices[vertexIndex] = vertex;
-    //     this.planeGeom.colors.push(new Color(1, 1, 1));
+      if (this.planeGeom.vertices[f.b]['color']) {
+        this.planeGeom.vertices[f.b]['color'].push(f.vertexColors[1]);
+      } else {
+        this.planeGeom.vertices[f.b]['color'] = [f.vertexColors[1]];
+      }
 
-    //     vertexIndex++;
-    //   }
-    // }
-
-    // vertexIndex = 0;
-
-    // for (let x = 0; x < this.gridSize; x++) {
-    //   for (let y = 0; y < this.gridSize; y++) {
-    //     const face = new Face3(
-    //       vertexIndex,
-    //       vertexIndex + 1,
-    //       vertexIndex + (this.gridSize + 1),
-    //       new Vector3(0, 1, 0),
-    //       new Color(0x0000ff)
-    //     );
-    //     const face2 = new Face3(
-    //       vertexIndex + (this.gridSize + 1),
-    //       vertexIndex + 1,
-    //       vertexIndex + (this.gridSize + 1) + 1,
-    //       new Vector3(0, 1, 0),
-    //       new Color(0x0000ff)
-    //     );
-
-    //     face.vertexColors[0] = new Color(0, 255, 0);
-    //     face.vertexColors[1] = new Color(0, 255, 0);
-    //     face.vertexColors[2] = new Color(0, 255, 0);
-
-    //     face2.vertexColors[0] = new Color(0, 255, 0);
-    //     face2.vertexColors[1] = new Color(0, 255, 0);
-    //     face2.vertexColors[2] = new Color(0, 255, 0);
-
-    //     this.planeGeom.vertices[vertexIndex]['color'].push(
-    //       face.vertexColors[0]
-    //     );
-    //     this.planeGeom.vertices[vertexIndex + 1]['color'].push(
-    //       face.vertexColors[1]
-    //     );
-    //     this.planeGeom.vertices[vertexIndex + (this.gridSize + 1)][
-    //       'color'
-    //     ].push(face.vertexColors[2]);
-
-    //     this.planeGeom.vertices[vertexIndex + (this.gridSize + 1)][
-    //       'color'
-    //     ].push(face2.vertexColors[0]);
-    //     this.planeGeom.vertices[vertexIndex + 1]['color'].push(
-    //       face2.vertexColors[1]
-    //     );
-    //     this.planeGeom.vertices[vertexIndex + (this.gridSize + 1) + 1][
-    //       'color'
-    //     ].push(face2.vertexColors[2]);
-
-    //     this.planeGeom.faces.push(face);
-    //     this.planeGeom.faces.push(face2);
-    //     vertexIndex++;
-    //   }
-    //   vertexIndex++;
-    // }
-
-    let index = 0;
-    for (const vertex of this.planeGeom.vertices) {
-      vertex['index'] = index;
-      index++;
+      if (this.planeGeom.vertices[f.c]['color']) {
+        this.planeGeom.vertices[f.c]['color'].push(f.vertexColors[2]);
+      } else {
+        this.planeGeom.vertices[f.c]['color'] = [f.vertexColors[2]];
+      }
     }
 
     this.planeGeom.computeVertexNormals();
@@ -308,9 +253,9 @@ export class SceneComponent implements AfterViewInit {
 
         for (const color of this.planeGeom.vertices[vertexIndex]['color']) {
           color.setHSL(
-            this.convertRange(data[height], [0, 255], [0.3, 0]),
+            this.convertRange(data[height], [0, 255], [0, 1]),
             1,
-            0.5
+            this.convertRange(data[height], [0, 255], [0, 0.5])
           );
         }
       }
@@ -390,23 +335,6 @@ export class SceneComponent implements AfterViewInit {
     this.cd.detectChanges();
   }
 
-  private getMatrixSquares(circleOffset: number) {
-    let row1 = this.gridVertices[circleOffset];
-    let row2 = this.gridVertices[this.gridSize - circleOffset];
-
-    row1 = row1.slice(circleOffset, this.gridSize - circleOffset + 1);
-    row2 = row2.slice(circleOffset, this.gridSize - circleOffset + 1);
-
-    let column1 = this.gridVertices.map(v => v[circleOffset]);
-    column1 = column1.slice(circleOffset, this.gridSize - circleOffset + 1);
-
-    let column2 = this.gridVertices.map(v => v[this.gridSize - circleOffset]);
-    column2 = column2.slice(circleOffset, this.gridSize - circleOffset + 1);
-
-    const all = column1.concat(column2, row1, row2);
-    return all;
-  }
-
   private test() {
     const data = this.analyzer.getAnalyzerData();
     const colorIndex = this.gridSize / 2;
@@ -415,31 +343,17 @@ export class SceneComponent implements AfterViewInit {
 
     const verticesPerRow = this.gridSize / this.cellSize + 1;
 
-    let height = Math.floor( verticesPerRow / 2);
-    for (let i = 0; i < verticesPerRow / 2 ; i++) {
-      let all = [];
-
-      all = all.concat(this.planeGeom.vertices.slice(
-        i * verticesPerRow + i,
-        verticesPerRow * i + verticesPerRow - i
-      ));
-
-      all = all.concat(
-        this.planeGeom.vertices.slice(
-          (this.planeGeom.vertices.length - verticesPerRow * (i + 1)) + i,
-          (this.planeGeom.vertices.length - i * verticesPerRow) - i
-        )
-      );
-
-      for (let j = i; j < verticesPerRow - i; j++) {
-        all.push(this.planeGeom.vertices[(j * verticesPerRow) + i]);
-        all.push(this.planeGeom.vertices[((j * verticesPerRow ) - i) + (verticesPerRow - 1)]);
-
-      }
-
-
-      for (const vertex of all) {
+    let height = Math.floor(verticesPerRow / 2);
+    for (let i = 0; i < verticesPerRow / 2; i++) {
+      for (const vertex of this.getSquaresIndicies(i, verticesPerRow)) {
         vertex.z = data[height];
+        // for (const color of vertex['color']) {
+        //   color.setHSL(
+        //     this.convertRange(data[height], [0, 255], [0, 1]),
+        //     1,
+        //     this.convertRange(data[height], [0, 255], [0, 0.5]),
+        //   );
+        // }
       }
 
       height--;
@@ -474,6 +388,31 @@ export class SceneComponent implements AfterViewInit {
 
     this.planeGeom.verticesNeedUpdate = true;
     this.planeGeom.colorsNeedUpdate = true;
+  }
+
+  private getSquaresIndicies(i: number, verticesPerRow: number) {
+    const all = [];
+    all.push.apply(
+      all,
+      this.planeGeom.vertices.slice(
+        i * verticesPerRow + i,
+        verticesPerRow * i + verticesPerRow - i
+      )
+    );
+    all.push.apply(
+      all,
+      this.planeGeom.vertices.slice(
+        this.planeGeom.vertices.length - verticesPerRow * (i + 1) + i,
+        this.planeGeom.vertices.length - i * verticesPerRow - i
+      )
+    );
+    for (let j = i; j < verticesPerRow - i; j++) {
+      all.push(this.planeGeom.vertices[j * verticesPerRow + i]);
+      all.push(
+        this.planeGeom.vertices[j * verticesPerRow - i + (verticesPerRow - 1)]
+      );
+    }
+    return all;
   }
 
   public changeView(view) {
