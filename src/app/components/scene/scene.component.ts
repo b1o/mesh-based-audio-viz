@@ -134,10 +134,10 @@ export class SceneComponent implements AfterViewInit {
 
     const centerRing = Math.ceil(((160 - 1) / 2));
 
-    this.planeGeom.vertices[0]
-      .copy(this.planeGeom.vertices[0]
-        .normalize()
-        .multiplyScalar(this.convertRange(data[0], [0, 255], [10, 50])));
+    // this.planeGeom.vertices[0]
+    //   .copy(this.planeGeom.vertices[0]
+    //     .normalize()
+    //     .multiplyScalar(this.convertRange(data[0], [0, 255], [10, 50])));
 
     this.planeGeom.vertices[0]['color'].forEach(c => c.setHSL(
       this.convertRange(data[height], [0, 255], [0, 1]),
@@ -146,10 +146,10 @@ export class SceneComponent implements AfterViewInit {
 
     ))
 
-    this.planeGeom.vertices[this.planeGeom.vertices.length - 1]
-      .copy(this.planeGeom.vertices[this.planeGeom.vertices.length - 1]
-        .normalize()
-        .multiplyScalar(this.convertRange(data[this.planeGeom.vertices.length - 1], [0, 255], [10, 50])));
+    // this.planeGeom.vertices[this.planeGeom.vertices.length - 1]
+    //   .copy(this.planeGeom.vertices[this.planeGeom.vertices.length - 1]
+    //     .normalize()
+    //     .multiplyScalar(this.convertRange(data[this.planeGeom.vertices.length - 1], [0, 255], [10, 50])));
 
     this.planeGeom.vertices[this.planeGeom.vertices.length - 1]['color'].forEach(c => c.setHSL(
       this.convertRange(data[this.planeGeom.vertices.length - 1], [0, 255], [0, 1]),
@@ -160,8 +160,8 @@ export class SceneComponent implements AfterViewInit {
     // vertexIndex++;
     for (let i = 1; i < this.planeGeom.vertices.length - 1; i += 32) {
       for (let j = i; j <= i + 32; j++) {
-        this.planeGeom.vertices[j]
-          .copy(this.planeGeom.vertices[j].normalize().multiplyScalar(this.convertRange(data[vertexIndex], [0, 255], [10, 50])));
+        // this.planeGeom.vertices[j]
+        //   .copy(this.planeGeom.vertices[j].normalize().multiplyScalar(this.convertRange(data[vertexIndex], [0, 255], [10, 50])));
 
         for (const color of this.planeGeom.vertices[j]['color']) {
           color.setHSL(
@@ -270,7 +270,6 @@ export class SceneComponent implements AfterViewInit {
         vertexIndex++;
       }
     }
-    console.log(this.planeGeom.faces.length))
     // this.planeGeom.vertices[0]['color'][0].r = 255;
     // this.planeGeom.vertices[1]['color'][0].r = 255;
     this.planeGeom.vertices[1]['color'][2].r = 255;
