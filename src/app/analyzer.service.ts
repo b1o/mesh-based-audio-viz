@@ -6,7 +6,7 @@ import { Subject } from 'rxjs/Subject';
 export class AnalyzerService {
   public audioElement: HTMLAudioElement;
 
-  public readonly FFT_SIZE = 1024;
+  public readonly FFT_SIZE = 2048;
 
   private dataArray;
   private audioCtx: AudioContext;

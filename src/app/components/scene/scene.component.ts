@@ -61,6 +61,9 @@ import {
 } from 'three';
 import { AnalyzerService } from '../../analyzer.service';
 import { TextCreator } from '../../text-creator';
+import { IDrawable } from '../../visualizers/IDrawable';
+import { Sphere } from '../../visualizers/sphere.viz';
+import { Utils } from '../../Utils';
 
 @Component({
   selector: 'app-scene',
@@ -104,6 +107,7 @@ export class SceneComponent implements AfterViewInit {
   public material = new MeshBasicMaterial({ color: new Color(0, 0, 100) });
 
   public hues = true;
+  private currentVisualiser: IDrawable;
 
   constructor(
     private analyzer: AnalyzerService,
@@ -120,7 +124,6 @@ export class SceneComponent implements AfterViewInit {
     }
 
     this.loader = new FontLoader();
-
   }
 
   public onSmoothenessChange(value) {
@@ -129,96 +132,6 @@ export class SceneComponent implements AfterViewInit {
 
   public updateSphere() {
     const data = this.analyzer.getAnalyzerData();
-    let height = 2;
-    let vertexIndex = 0;
-
-    const centerRing = Math.ceil(((160 - 1) / 2));
-
-    // this.planeGeom.vertices[0]
-    //   .copy(this.planeGeom.vertices[0]
-    //     .normalize()
-    //     .multiplyScalar(this.convertRange(data[0], [0, 255], [10, 50])));
-
-    this.planeGeom.vertices[0]['color'].forEach(c => c.setHSL(
-      this.convertRange(data[height], [0, 255], [0, 1]),
-      1,
-      this.convertRange(data[0], [0, 255], [0, 1])
-
-    ))
-
-    // this.planeGeom.vertices[this.planeGeom.vertices.length - 1]
-    //   .copy(this.planeGeom.vertices[this.planeGeom.vertices.length - 1]
-    //     .normalize()
-    //     .multiplyScalar(this.convertRange(data[this.planeGeom.vertices.length - 1], [0, 255], [10, 50])));
-
-    this.planeGeom.vertices[this.planeGeom.vertices.length - 1]['color'].forEach(c => c.setHSL(
-      this.convertRange(data[this.planeGeom.vertices.length - 1], [0, 255], [0, 1]),
-      1,
-      this.convertRange(data[this.planeGeom.vertices.length - 1], [0, 255], [0, 1])
-    ))
-
-    // vertexIndex++;
-    for (let i = 1; i < this.planeGeom.vertices.length - 1; i += 32) {
-      for (let j = i; j <= i + 32; j++) {
-        // this.planeGeom.vertices[j]
-        //   .copy(this.planeGeom.vertices[j].normalize().multiplyScalar(this.convertRange(data[vertexIndex], [0, 255], [10, 50])));
-
-        for (const color of this.planeGeom.vertices[j]['color']) {
-          color.setHSL(
-            this.convertRange(data[height], [0, 255], [0, 1]),
-            1,
-            this.convertRange(data[height], [0, 255], [0, 1])
-
-          );
-        }
-      }
-      vertexIndex++;
-      height++;
-    }
-
-    this.pivot.rotation.y +=
-      data.reduce((a, b) => a + b, 0) / data.length / 255;
-    this.planeGeom.verticesNeedUpdate = true;
-    this.planeGeom.colorsNeedUpdate = true;
-  }
-
-  public setupSphere() {
-    const geometry = new SphereGeometry(50, 32, 256);
-    const material = new MeshPhongMaterial({ vertexColors: FaceColors, flatShading: true, wireframe: true });
-
-    this.planeGeom = geometry;
-    this.planeMesh = new Mesh(geometry, material);
-    console.log(this.planeGeom.faces.length)
-
-    for (let i = 0; i < this.planeGeom.faces.length; i++) {
-      const f = this.planeGeom.faces[i];
-      f.vertexColors[0] = new Color(0, 255, 0);
-      f.vertexColors[1] = new Color(0, 255, 0);
-      f.vertexColors[2] = new Color(0, 255, 0);
-
-      if (this.planeGeom.vertices[f.a]['color']) {
-        this.planeGeom.vertices[f.a]['color'].push(f.vertexColors[0]);
-      } else {
-        this.planeGeom.vertices[f.a]['color'] = [f.vertexColors[0]];
-      }
-
-      if (this.planeGeom.vertices[f.b]['color']) {
-        this.planeGeom.vertices[f.b]['color'].push(f.vertexColors[1]);
-      } else {
-        this.planeGeom.vertices[f.b]['color'] = [f.vertexColors[1]];
-      }
-
-      if (this.planeGeom.vertices[f.c]['color']) {
-        this.planeGeom.vertices[f.c]['color'].push(f.vertexColors[2]);
-      } else {
-        this.planeGeom.vertices[f.c]['color'] = [f.vertexColors[2]];
-      }
-    }
-
-
-    this.pivot = new Group();
-    this.pivot.add(this.planeMesh);
-    this.scene.add(this.pivot);
   }
 
   public fuckMeUp() {
@@ -350,40 +263,6 @@ export class SceneComponent implements AfterViewInit {
     this.pivot.position.copy(geometry.center());
   }
 
-
-  public updateRing() {
-    const data = this.analyzer.getAnalyzerData();
-
-    let height = 0;
-    for (let i = 0; i < this.planeGeom.vertices.length; i += 32) {
-      for (let vertexIndex = i; vertexIndex < i + 32; vertexIndex++) {
-        this.planeGeom.vertices[vertexIndex].z = this.convertRange(
-          data[height],
-          [0, 255],
-          [0, 30]
-        );
-
-        for (const color of this.planeGeom.vertices[vertexIndex]['color']) {
-          color.setHSL(
-            this.convertRange(data[height], [0, 255], [0, 1]),
-            1,
-            this.convertRange(data[height], [0, 255], [0, 1])
-          );
-        }
-      }
-      height++;
-    }
-    this.planeGeom.colorsNeedUpdate = true;
-    this.planeGeom.verticesNeedUpdate = true;
-
-    // this.pivot.rotation.y +=
-    //   data.reduce((a, b) => a + b, 0) / data.length / 255;
-  }
-
-  private convertRange(value, r1, r2) {
-    return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
-  }
-
   toggleWireframe() {
     this.wireframe = !this.wireframe;
     this.cd.detectChanges();
@@ -401,51 +280,43 @@ export class SceneComponent implements AfterViewInit {
     // const colorIndex = this.gridSize / 2;
 
     let height = this.gridSize / 2;
-    for (let squareIndex = 10; squareIndex <= this.gridSize / 2; squareIndex++) {
+    for (
+      let squareIndex = 10;
+      squareIndex <= this.gridSize / 2;
+      squareIndex++
+    ) {
       this.gridVertices
         .map(x => x[squareIndex])
         .slice(squareIndex, this.gridSize - squareIndex)
-        .map(x => { x.z = data[height]; return x; })
+        .map(x => {
+          x.z = data[height];
+          return x;
+        });
 
       this.gridVertices
         .map(x => x[this.gridSize - squareIndex])
         .slice(squareIndex, this.gridSize - squareIndex)
-        .map(x => { x.z = data[height]; return x; })
-
+        .map(x => {
+          x.z = data[height];
+          return x;
+        });
 
       this.gridVertices[squareIndex]
         .slice(squareIndex, this.gridSize - squareIndex)
-        .map(x => { x.z = data[height]; return x; })
-
-
+        .map(x => {
+          x.z = data[height];
+          return x;
+        });
 
       this.gridVertices[this.gridSize - squareIndex]
         .slice(squareIndex, this.gridSize - squareIndex + 1)
-        .map(x => { x.z = data[height]; x['color'].forEach(c => c.r = data[height]) });
-
-
+        .map(x => {
+          x.z = data[height];
+          x['color'].forEach(c => (c.r = data[height]));
+        });
 
       height--;
     }
-
-    // const vertices = this.planeGeom.vertices;
-
-
-    // let height = Math.floor(verticesPerRow / 2);
-    // for (let i = 0; i < verticesPerRow / 2; i++) {
-    //   for (const vertex of this.getSquaresIndicies(i, verticesPerRow)) {
-    //     vertex.z = data[height] / 2;
-    //     for (const color of vertex['color']) {
-    //       color.setHSL(
-    //         this.convertRange(data[height], [0, 255], [0.3, 0]),
-    //         1,
-    //         0.5,
-    //       );
-    //     }
-    //   }
-
-    //   height--;
-    // }
 
     this.planeGeom.verticesNeedUpdate = true;
     this.planeGeom.colorsNeedUpdate = true;
@@ -477,39 +348,16 @@ export class SceneComponent implements AfterViewInit {
   }
 
   public changeView(view) {
-    console.log(view);
-    this.dataHistory = [];
-    this.scene.remove(this.pivot);
-    this.pivot = null;
-    this.planeMesh = null;
-    this.planeGeom = null;
-    this.gridVertices = new Array<Array<Vector3>>();
-    for (let x = 0; x <= this.gridSize; x++) {
-      const tempArr = [];
-      for (let y = 0; y <= this.gridSize; y++) {
-        tempArr.push(new Vector3(0, 0, 0));
+    if (this.currentVisualiser) {
+      this.scene.remove(this.currentVisualiser.mesh);
+    }
+    switch (view) {
+      case 'sphere': {
+        this.currentVisualiser = new Sphere({maxRadius: 100, minRadius: 1});
       }
-      this.gridVertices.push(tempArr);
     }
-
-    if (view === 'spectrogram') {
-      this.setupPlane();
-      this.previousCameraPos = this.camera.position;
-      this.camera.position.copy(this.pivot.position);
-      this.camera.position.y = 400;
-      this.pivot.rotation.y = 0;
-    } else if (view === 'pyramid') {
-      this.setupPlane();
-    } else if (view === 'circle') {
-      this.setupRing();
-    } else {
-      this.setupSphere();
-    }
+    this.scene.add(this.currentVisualiser.mesh);
     this.view = view;
-    this.planeGeom.computeFaceNormals();
-    this.planeGeom.computeMorphNormals();
-    this.planeGeom.verticesNeedUpdate = true;
-    this.planeGeom.colorsNeedUpdate = true;
   }
 
   private spectogram() {
@@ -527,9 +375,9 @@ export class SceneComponent implements AfterViewInit {
         vertices[v].y = currentData[v];
         for (const color of vertices[v]['color']) {
           color.setHSL(
-            this.convertRange(currentData[v], [0, 255], [0.3, 0]),
+            Utils.convertRange(currentData[v], [0, 255], [0.3, 0]),
             1,
-            this.convertRange(currentData[v], [0, 255], [0, 0.5])
+            Utils.convertRange(currentData[v], [0, 255], [0, 0.5])
           );
         }
       }
@@ -544,7 +392,7 @@ export class SceneComponent implements AfterViewInit {
   }
 
   private addLights() {
-    const light = new HemisphereLight(0xffffff, 0xffffff, 1);
+    const light = new HemisphereLight(0xffffff, 0x0f0f0f, 1);
     // light.castShadow = true;
     // light.position.copy(this.pivot.position);
     // light.position.y = 300;
@@ -556,7 +404,7 @@ export class SceneComponent implements AfterViewInit {
 
   normalize(min, max) {
     const delta = max - min;
-    return function (val) {
+    return function(val) {
       return (val - min) / delta;
     };
   }
@@ -601,19 +449,12 @@ export class SceneComponent implements AfterViewInit {
         // component.camera.lookAt(component.pivot.position);
       }
 
-      const material = component.planeMesh.material as MeshPhongMaterial;
-      material.wireframe = component.wireframe;
-      material.flatShading = component.shading;
+      // const material = component.planeMesh.material as MeshPhongMaterial;
+      // material.wireframe = component.wireframe;
+      // material.flatShading = component.shading;
 
-      if (component.view === 'pyramid') {
-        component.updatePlane();
-      } else if (component.view === 'spectrogram') {
-        component.spectogram();
-      } else if (component.view === 'circle') {
-        component.updateRing();
-      } else {
-        component.updateSphere()
-      }
+      component.currentVisualiser.draw(component.analyzer.getAnalyzerData());
+
       component.render();
     })();
   }
@@ -639,14 +480,15 @@ export class SceneComponent implements AfterViewInit {
       this.nearClippingPane,
       this.farClippingPane
     );
-    this.camera.position.copy(this.pivot.position);
-    this.camera.position.z = 150;
-    this.camera.position.y = 60;
-    this.camera.lookAt(this.pivot.position);
+    this.camera.position.set(0, 200, 0);
+    // this.camera.position.z = 150;
+    // this.camera.position.y = 60;
+    // this.camera.lookAt(this.pivot.position);
   }
 
   private createScene() {
     this.scene = new Scene();
+    this.scene.add(new AxesHelper(100));
     const size = 10;
     const divisions = 10;
   }
@@ -654,8 +496,9 @@ export class SceneComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.createScene();
     // this.setupPlane(true);
-    // this.changeView(this.view);
-    this.setupSphere()
+    // this.changeView('sphere');
+    this.changeView('sphere');
+    // this.setupRing();
     this.addLights();
     this.createCamera();
     this.startRendering();
