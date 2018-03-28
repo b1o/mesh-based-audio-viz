@@ -8,6 +8,7 @@ import { FileSelectComponent } from './components/file-select/file-select.compon
 import { AudioPlayerComponent } from './components/audio-player/audio-player.component';
 import { SceneComponent } from './components/scene/scene.component';
 import { AnalyzerService } from './analyzer.service';
+import { VizConfigComponent } from './components/viz-config/viz-config.component';
 
 
 @NgModule({
@@ -15,7 +16,8 @@ import { AnalyzerService } from './analyzer.service';
     AppComponent,
     FileSelectComponent,
     AudioPlayerComponent,
-    SceneComponent
+    SceneComponent,
+    VizConfigComponent
   ],
   imports: [
     BrowserModule,

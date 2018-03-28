@@ -1,0 +1,7 @@
+<div class="configs">
+  <div class="option" *ngFor="let config of keyValues">
+    <label for="{{config.key}}">{{config.key}}</label>
+    <input id="{{config.key}}" value="{{config.value}}" (change)="onConfigChange()" [(ngModel)]="configs[config.key].value" type="number" >
+    
+  </div>
+</div>

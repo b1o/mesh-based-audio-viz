@@ -20,7 +20,7 @@
       Views:
       <!-- <button (click)="changeView('spectrogram')">Spectrogram</button> -->
       <button (click)="changeView('sphere')">Sphere</button>
-      <button (click)="changeView('circle')">Circle</button>
+      <button (click)="changeView('rings')">Circle</button>
       <button (click)="fuckMeUp()">Fuck me up</button>
 
     </div>
@@ -37,3 +37,5 @@
 
   </div>
 </div>
+
+<app-viz-config (configChanged)="handleConfigChanged($event)" *ngIf="currentVisualiser" [configs]="currentVisualiser.config"></app-viz-config>

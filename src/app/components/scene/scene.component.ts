@@ -64,6 +64,8 @@ import { TextCreator } from '../../text-creator';
 import { IDrawable } from '../../visualizers/IDrawable';
 import { Sphere } from '../../visualizers/sphere.viz';
 import { Utils } from '../../Utils';
+import { Visualizer } from '../../visualizers/AbstractVizualizer';
+import { Rings } from '../../visualizers/rings.viz';
 
 @Component({
   selector: 'app-scene',
@@ -107,7 +109,7 @@ export class SceneComponent implements AfterViewInit {
   public material = new MeshBasicMaterial({ color: new Color(0, 0, 100) });
 
   public hues = true;
-  private currentVisualiser: IDrawable;
+  public currentVisualiser: Visualizer;
 
   constructor(
     private analyzer: AnalyzerService,
@@ -124,6 +126,11 @@ export class SceneComponent implements AfterViewInit {
     }
 
     this.loader = new FontLoader();
+  }
+
+  public handleConfigChanged(configs) {
+
+    this.currentVisualiser.updateConfigs(configs);
   }
 
   public onSmoothenessChange(value) {
@@ -210,69 +217,13 @@ export class SceneComponent implements AfterViewInit {
     this.pivot.position.copy(this.planeGeom.center());
   }
 
-  public setupRing() {
-    const geometry = new RingGeometry(0, 100, 32, 400);
-    const material = new MeshPhongMaterial({
-      wireframe: true,
-      vertexColors: FaceColors,
-      side: DoubleSide
-    });
-    const mesh = new Mesh(geometry, material);
-    mesh.lookAt(new Vector3(0, 1, 0));
-    this.planeGeom = geometry;
-    this.planeMesh = mesh;
-    this.planeMesh.castShadow = true;
-    this.planeMesh.receiveShadow = true;
-    mesh.position.set(0, 0, 0);
-    console.log(this.planeGeom.vertices);
-    console.log(this.planeGeom.faces);
-
-    for (let i = 0; i < this.planeGeom.faces.length; i++) {
-      const f = this.planeGeom.faces[i];
-      f.vertexColors[0] = new Color(0, 255, 0);
-      f.vertexColors[1] = new Color(0, 255, 0);
-      f.vertexColors[2] = new Color(0, 255, 0);
-
-      if (this.planeGeom.vertices[f.a]['color']) {
-        this.planeGeom.vertices[f.a]['color'].push(f.vertexColors[0]);
-      } else {
-        this.planeGeom.vertices[f.a]['color'] = [f.vertexColors[0]];
-      }
-
-      if (this.planeGeom.vertices[f.b]['color']) {
-        this.planeGeom.vertices[f.b]['color'].push(f.vertexColors[1]);
-      } else {
-        this.planeGeom.vertices[f.b]['color'] = [f.vertexColors[1]];
-      }
-
-      if (this.planeGeom.vertices[f.c]['color']) {
-        this.planeGeom.vertices[f.c]['color'].push(f.vertexColors[2]);
-      } else {
-        this.planeGeom.vertices[f.c]['color'] = [f.vertexColors[2]];
-      }
-    }
-
-    console.log(this.planeGeom.colors.length);
-    this.planeGeom.computeFaceNormals();
-    this.planeGeom.computeVertexNormals();
-
-    this.pivot = new Group();
-    this.scene.add(this.pivot);
-    this.pivot.add(this.planeMesh);
-
-    this.pivot.position.copy(geometry.center());
-  }
 
   toggleWireframe() {
-    this.wireframe = !this.wireframe;
-    this.cd.detectChanges();
+    this.currentVisualiser.toggleWireframe();
   }
 
   toggleShading() {
-    this.shading = !this.shading;
-    const material = this.planeMesh.material as MeshPhongMaterial;
-    material.needsUpdate = true;
-    this.cd.detectChanges();
+    this.currentVisualiser.toggleShading();
   }
 
   private updatePlane() {
@@ -353,9 +304,16 @@ export class SceneComponent implements AfterViewInit {
     }
     switch (view) {
       case 'sphere': {
-        this.currentVisualiser = new Sphere({maxRadius: 100, minRadius: 1});
+        this.currentVisualiser = new Sphere({maxRadius: 40, minRadius: 30});
+        break;
+      }
+
+      case 'rings': {
+        this.currentVisualiser = new Rings();
+        break;
       }
     }
+    this.cd.detectChanges();
     this.scene.add(this.currentVisualiser.mesh);
     this.view = view;
   }

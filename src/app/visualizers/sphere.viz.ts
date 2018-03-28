@@ -10,33 +10,38 @@ import {
   Color
 } from 'three';
 import { Utils } from '../Utils';
+import { IInteractable } from './IInterctable';
+import { Visualizer, IVIzConfig } from './AbstractVizualizer';
 
 export interface ISphereConfig {
-  minRadius?: number;
-  maxRadius?: number;
-  heightSegments?: number;
-  widthSegments?: number;
-  radius?: number;
-  material?: Material;
+  minRadius?: IVIzConfig;
+  maxRadius?: IVIzConfig;
+  heightSegments?: IVIzConfig;
+  widthSegments?: IVIzConfig;
+  radius?: IVIzConfig;
+  material?: IVIzConfig;
 }
 
 export const DefaultConfig: ISphereConfig = {
-  minRadius: 10,
-  maxRadius: 30,
-  widthSegments: 32,
-  heightSegments: 320,
-  radius: 10,
-  material: new MeshPhongMaterial({ vertexColors: VertexColors })
+  minRadius: { type: 'number', value: 10, canChange: true },
+  maxRadius: { type: 'number', value: 30, canChange: true },
+  widthSegments: { type: 'number', value: 32, canChange: false },
+  heightSegments: { type: 'number', value: 320, canChange: false },
+  radius: { type: 'number', value: 10, canChange: false },
+  material: { type: 'number', value: new MeshPhongMaterial({ vertexColors: VertexColors }), canChange: false }
 };
 
-export class Sphere implements IDrawable {
+export class Sphere extends Visualizer {
   public mesh: Mesh;
-  private config: ISphereConfig = DefaultConfig;
+  public config: ISphereConfig = DefaultConfig;
   private geometry: SphereGeometry;
 
   constructor(config?: ISphereConfig) {
+    super();
     if (config) {
-      this.config = {...this.config, ...config };
+      Object.keys(config).forEach(key => {
+        this.config[key].value = config[key];
+      })
       console.log(this.config);
     }
     this.createMesh();
@@ -47,16 +52,16 @@ export class Sphere implements IDrawable {
   }
 
   get ringCount() {
-    return this.config.heightSegments - 1;
+    return this.config.heightSegments.value - 1;
   }
 
   public draw(data) {
-    let height = (this.config.heightSegments / 2) - 1;
+    let height = (this.config.heightSegments.value / 2) - 1;
 
     this.geometry.vertices[0].copy(
       this.geometry.vertices[0]
         .normalize()
-        .multiplyScalar(Utils.convertRange(data[height], [0, 255], [this.config.minRadius, this.config.maxRadius]))
+        .multiplyScalar(Utils.convertRange(data[height], [0, 255], [this.config.minRadius.value, this.config.maxRadius.value]))
     );
 
     this.geometry.vertices[0]['color'].forEach(c =>
@@ -71,7 +76,7 @@ export class Sphere implements IDrawable {
     this.geometry.vertices[this.geometry.vertices.length - 1].copy(
       this.geometry.vertices[this.geometry.vertices.length - 1]
         .normalize()
-        .multiplyScalar(Utils.convertRange(data[height], [0, 255], [this.config.minRadius, this.config.maxRadius]))
+        .multiplyScalar(Utils.convertRange(data[height], [0, 255], [this.config.minRadius.value, this.config.maxRadius.value]))
     );
 
     this.geometry.vertices[this.geometry.vertices.length - 1][
@@ -85,8 +90,8 @@ export class Sphere implements IDrawable {
     );
 
     let currentRing = 1;
-    for (let i = 1; i < this.geometry.vertices.length - 1; i += 32) {
-      for (let j = i; j < i + 32; j++) {
+    for (let i = 1; i < this.geometry.vertices.length - 1; i += this.config.widthSegments.value) {
+      for (let j = i; j < i + this.config.widthSegments.value; j++) {
         if (j === this.geometry.vertices.length - 1) {
           continue;
         }
@@ -94,7 +99,7 @@ export class Sphere implements IDrawable {
         this.geometry.vertices[j].copy(
           this.geometry.vertices[j]
             .normalize()
-            .multiplyScalar(Utils.convertRange(data[height], [0, 255], [this.config.minRadius, this.config.maxRadius]))
+            .multiplyScalar(Utils.convertRange(data[height], [0, 255], [this.config.minRadius.value, this.config.maxRadius.value]))
         );
 
         for (const color of this.geometry.vertices[j]['color']) {
@@ -145,7 +150,7 @@ export class Sphere implements IDrawable {
 
   private createMesh() {
     this.geometry = new SphereGeometry(30, 32, 320);
-    this.mesh = new Mesh(this.geometry, this.config.material);
+    this.mesh = new Mesh(this.geometry, this.config.material.value);
     this.addColorsToVertices();
   }
 }
